@@ -80,21 +80,20 @@ while (<GROUP>) {
 #	die "Argh\n";
 }
 
-
 opendir (DIR,$var_dir) || modules::Exception->throw("ERROR: Can't open directory");
 my @files = grep {/\d+/} readdir DIR;
 closedir DIR;
 
 open(SUMMARY,">variant_summary.txt") || modules::Exception->throw("ERROR: Can't open variant_summary file");
 
-for my $file (sort {my ($a_chr,$a_coord) = $a =~ /_(\S+):(\d+)/;my ($b_chr,$b_coord) = $b =~ /_(\S+):(\d+)/; $a_chr cmp $b_chr || $a_coord <=> $b_coord } @files) {
-	my ($chr,$coord) = $file =~ /([0-9XYM]+):(\d+)/;
+for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coord) = $b =~ /(\S+)_(\d+)/; $a_chr cmp $b_chr || $a_coord <=> $b_coord } @files) {
+	#my ($chr,$coord) = $file =~ /([0-9XYM]+):(\d+)/;
 	open(FILE,"$var_dir/$file") || modules::Exception->throw("Can't open file $var_dir/$file\n");
 	my %var_data = ();
 	while (<FILE>) {
 		chomp;
 		my @fields = split("\t");
-		my @tag_fields = split(":",$fields[4]);
+		my @tag_fields = split(":",$fields[5]);
 		my $barcode = $tag_fields[-1];
 		$barcode =~ s/UID=//; 
 
@@ -102,34 +101,49 @@ for my $file (sort {my ($a_chr,$a_coord) = $a =~ /_(\S+):(\d+)/;my ($b_chr,$b_co
 		
 		
 		
-		my $non_match_count = () = $fields[6] =~ /[ATCG]/g; #skip reads with 5 or more mismatches
+		my $non_match_count = () = $fields[7] =~ /[ATCG]/g; #skip reads with 10 or more mismatches
 		
 		if ($non_match_count >= 10) {
 			next;
 		}
 
-		next if $fields[6] =~ /[ATCG]{5}/; #Skip reads with 5 or more consecutive mismatches
+		next if $fields[7] =~ /[ATCG]{5}/; #Skip reads with 5 or more consecutive mismatches
 
 		#Finally skip variants reported within the first or last 3 bases
-		if ($fields[2] <= 3 || (length($fields[6])-$fields[2]) <= 3) {
+		if ($fields[3] <= 3 || (length($fields[7])-$fields[3]) <= 3) {
 			next;
 		}
 		
-		$var_data{$barcode}{$fields[3]}++;	
+		$var_data{$fields[0]}{$fields[1]}{$fields[2]}{$barcode}{$fields[4]}++;	
 	}
 	
 	close FILE;
 	
-	for my $barcode (sort keys %var_data) {
-		for my $base (sort {$a cmp $b} keys %{$var_data{$barcode}}) {
-			my $var_count = $var_data{$barcode}{$base};
-			my $group_count = $group_counts{$barcode};
-			my $percent = sprintf("%.2f",($var_count / $group_count) * 100) if $group_count;
-			print SUMMARY "$chr $coord $base $barcode $var_count $group_count $percent%\n";
+	for my $chr ( sort keys %var_data ) {
+	    for my $start ( sort {$a<=>$b} keys %{$var_data{$chr}} ) {
+	    	for my $end (keys %{$var_data{$chr}{$start}}) {
+				for my $barcode (sort keys %{$var_data{$chr}{$start}{$end}}) {
+					for my $base (sort {$a cmp $b} keys %{$var_data{$chr}{$start}{$end}{$barcode}}) {
+						my $var_count = $var_data{$chr}{$start}{$end}{$barcode}{$base};
+						my $group_count = $group_counts{$barcode};
+						if (!exists $group_counts{$barcode}) {
+							#modules::Exception->warning("ERROR: Problem with barcode $barcode, skipping");
+							next;
+						} 
+						my $percent = sprintf("%.2f",($var_count / $group_count) * 100) if $group_count;
+						print SUMMARY "$chr $start $end $base $barcode $var_count $group_count $percent%\n";
+					}
+				}
+	    		
+	    	}
 		}
 	}
 	
+	
 }
+
+#These files are often large and not needed after this
+system("rm $var_dir/*fillmd");
 
 close SUMMARY;
 

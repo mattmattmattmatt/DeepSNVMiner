@@ -35,14 +35,10 @@ my %COMMANDS = (1 =>
 				  	 	'block' => 'pool_reads',
 				  	 	'commands' => [
 										"GROUPBYBARCODE -read1_file FASTQFILE1 -read2_file FASTQFILE2 ADAPTOR NO_UID -uid_len1 UID_LEN1 -uid_len2 UID_LEN2 MIN_SEQLEN",# Filter the reads, remove the barcode sequence content and add barcodes to the tags
-										#q(perl -e '$wcout = `wc -l  FASTQFILE1.filter`; $wcout =~ /^(\d+)/; $len = $1 - 4; `head -$len FASTQFILE1.filter > temp.fastq.filter`; `mv temp.fastq.filter FASTQFILE1.filter`;'),# monumental hack - to remove last line of filtered fastq for Yogesh's data, which seems to always have a bizarre character or summat at the last read of the file
-				  	 					#q(perl -e '$wcout = `wc -l  FASTQFILE2.filter`; $wcout =~ /^(\d+)/; $len = $1 - 4; `head -$len FASTQFILE2.filter > temp.fastq.filter`; `mv temp.fastq.filter FASTQFILE2.filter`;'),
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
 				  	 	'stdout' => [
 				  	 				0,
-				  	 				#0,
-				  	 				#0
 				  	 				],
 						
 				    },		   
@@ -72,7 +68,7 @@ my %COMMANDS = (1 =>
 				  	 {
 				  	 	'block' => 'call_variants',
 				  	 	'commands' => [
-				  	 					q(VARBASES BEDFILE FILENAMESTUB.bam SAMTOOLS GENOMEFASTA vars_FILENAMESTUB), # Get the variant bases for each read
+				  	 					q(VARBASES -coord_bed BEDFILE -bam FILENAMESTUB.bam -samtools SAMTOOLS -ref_fasta GENOMEFASTA -outdir vars_FILENAMESTUB), # Get the variant bases for each read
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
 				  	 	'stdout' => [
@@ -89,7 +85,7 @@ my %COMMANDS = (1 =>
 				  	 					q(VARSUMMARY -var_dir vars_FILENAMESTUB -group_file FILENAMESTUB_R1.group_counts_final),# Group by barcode for each coordinate
 										q(cut -d' ' -f1 FILENAMESTUB_R1.group_counts_final |sort | uniq -c | perl -e 'while(<>){chomp; /(\d+)\s+(\d+)/; $tally += $1;} print $tally . "\n";'),#Total reads in groups
 										q(grep -w ^1 FILENAMESTUB_R1.group_counts_final |wc -l),#Total reads in singleton groups
-										q(perl -ne '@cols = split /\s/; print if $cols[5] >= SM_COUNT && $cols[4]/$cols[5] >= SM_PORTION;' variant_summary.txt > FILENAMESTUB.single_supermutants.txt),#Commands to filter all supermutants and count them
+										q(perl -ne '@cols = split /\s/; print if $cols[6] >= SM_COUNT && $cols[5]/$cols[6] >= SM_PORTION;' variant_summary.txt > FILENAMESTUB.single_supermutants.txt),#Commands to filter all supermutants and count them
 										q(FINALSUMMARY -sm_file FILENAMESTUB.single_supermutants.txt -filestub FILENAMESTUB -min_group MIN_GROUP),#Commands to group supermutants by coord and apply min uid filter 
 										q(wc -l FILENAMESTUB.pass_group_supermutants.tsv) #Number of supermutant groups (defaults: 10 or more members per UID; 40% or more of bases mutant; 2 barcode groups at least)
 				  	 					],
@@ -110,15 +106,10 @@ my %COMMANDS = (1 =>
 				  	 	'block' => 'graph',
 				  	 	'commands' => [
 										q(cut -d' ' -f1 FILENAMESTUB_R1.group_counts_final | grep -v -w ^1 > no_Ns_group_sizes;  Rscript R_DIR/group_size.R WORKING_DIR FILENAMESTUB_R1.group_counts_final; ls group_sizes.graph.pdf),#Graph of group sizes
-										q(wc -l vars_FILENAMESTUB/var_* | perl -ne 'chomp; s/^\s+//; s/[\t\s]+/ /g; /(\d+).+var_(\S+):(\d+).out/; print join("\t", $2, $3, $1) . "\n";' > variant_coord;),
-										q(GRAPH -r_dir R_DIR -variants WORKING_DIR/variant_coord -coord_bed BEDFILE -super_mutants WORKING_DIR/FILENAMESTUB.pass_single_supermutants.tsv) 
-										#perl -e 'while(<>) {@cols = split /\s+/; $coord_tally{$cols[0]}++;} foreach $coord ( (10..20) ) {print join ("\t", $coord, defined($coord_tally{$coord})?$coord_tally{$coord}:0) ."\n"; }' FILENAMESTUB.passing_supermutants.txt > supermutant_coords.txt; R CMD BATCH R_DIR/supermut_coord.R; ls supermut_coords.graph.pdf) # Distribution of supermutants graph
-										# R CMD BATCH R_DIR/mut_coord.R; ls mut_coords.graph.pdf),# Distribution of all mutations graph
-				  	 					#q(R CMD BATCH R_DIR/supermut_coord.R; ls supermut_coords.graph.pdf) # Distribution of supermutants graph
+										q(GRAPH -var_dir vars_FILENAMESTUB -r_dir R_DIR -coord_bed BEDFILE -super_mutants WORKING_DIR/FILENAMESTUB.pass_single_supermutants.tsv) 
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
 				  	 	'stdout' => [
-				  	 				1,
 				  	 				1,
 				  	 				0
 				  	 				],
@@ -221,16 +212,94 @@ sub check_step {
 
 #If there's an adaptor sequence we need to pass it in to group_by_barcode
 sub set_adaptor {
-	my ($self,$adaptor_seq) = @_;
-	$self->{mapping}->{ADAPTOR} = '-adaptor_seq '.$adaptor_seq;
+	my ($self,$adaptor_seqs) = @_;
+	my $adaptor_str = join(",",@{$adaptor_seqs});
+	$self->{mapping}->{ADAPTOR} = '-adaptor_seq '.$adaptor_str;
 }
 
 #Get the adaptor from the sequence
 sub get_adaptor {
-	#TODO: Search for adaptor
-	#return 'ATTT';
+	
+	my ($self) = @_;
+	my $reads_to_check = 1000;
+	
+	my $read_file = $self->{mapping}->{FASTQFILE1};
+	my $line_num = 3;
+	my $reads_checked = 0;
+	my $seq_line_count = 4;
+	open(FILE,"$read_file") || modules::Exception->throw("Can't open file $read_file\n");
+	
+	my $adaptor;
+	
+	my @seqs = ();
+	
+	#First get the sequence for the first 1000 reads
+	while(<FILE>) {
+		if ($reads_checked == $reads_to_check) {
+			last;
+		}
+		if ($line_num % $seq_line_count == 0) {
+			chomp;
+			#ignore N reads
+			if ($_ =~ /^[ACTG].*[ACGT]$/) {
+				push @seqs, $_;
+				$reads_checked++;
+			}
+		}
+		$line_num++;
+	}
+	
+	#now check all pairs for longest common substring at beginning
+	
+	my %common_substr = ();
+	
+	for ( my $var = 0 ; $var < @seqs-1 ; $var++ ) {
+	    if (my $substr = _get_common_substr($seqs[$var],$seqs[$var+1])) {
+	    	$common_substr{$substr}++;
+	    } else {
+	    	$common_substr{none}++;
+		
+	    }
+	}
+	
+	my $min_adaptor_length = 10; #require at least 10 bases
+	my $min_adaptor_count = 50; #require 5% of reads to have this
+	
+	my @final_adaptors = ();
+	
+	for my $substr ( keys %common_substr ) {
+	    if (length($substr) >= $min_adaptor_length && $common_substr{$substr} >= $min_adaptor_count) {
+	    	push @final_adaptors, $substr;
+	    }
+	}
+	
+	if (@final_adaptors) {
+		return \@final_adaptors;
+	} else {
+		return 0;
+	}
+	
+	
 }
 
+
+sub _get_common_substr {
+	my @strings = @_;
+	my $longest = reduce {
+	    my $len = length($strings[0])<length($strings[1])?length($strings[0]):length($strings[1]);
+	    my ($current_prefix, $string) = (substr($strings[0], 0, $len), substr($strings[1], 0, $len));
+	
+	    while($current_prefix ne $string) {
+	        chop $current_prefix;
+	        chop $string;
+	    }
+	
+	    return $current_prefix;
+	} @strings;
+    
+    
+    return $longest;	
+}
 
 sub get_commands {
 	my ($self) = @_;

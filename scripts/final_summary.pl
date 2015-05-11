@@ -75,7 +75,7 @@ my $sm_coord_out = $filestub . '.pass_group_supermutants.tsv';
 while (<SMFILE>) {
 	chomp;
     my @fields = split;
-    my $unique_key = $fields[0].':'.$fields[1].':'.$fields[2]; #chr:coord:varbase
+    my $unique_key = $fields[0].':'.$fields[1].':'.$fields[2].':'.$fields[3]; #chr:start:end:varbase
     $group_by_coord{$unique_key}{count}++;
     push @{$group_by_coord{$unique_key}{entries}}, $_;
 }
@@ -88,13 +88,13 @@ for my $unique_key (sort {my ($a_chr,$a_coord) = split(':',$a); my ($b_chr,$b_co
 		my %group_entries = ();
 		for my $entry ( @{$group_by_coord{$unique_key}{entries}} ) {
 			my @fields = split(" ",$entry);
-			$group_entries{$fields[3] .'('.$fields[4] . '/'.$fields[5] .')'}++;
+			$group_entries{$fields[4] .'('.$fields[5] . '/'.$fields[6] .')'}++;
 		    $entry =~ s/\s/\t/g;
 		    print SINGLE $entry . "\n";
 		}
 		my $coord_string = join("; ",keys %group_entries);
-		my ($chr,$coord,$base) = split(':',$unique_key);
-		print COORD join("\t",$group_by_coord{$unique_key}{count},$chr,$coord,$base,$coord_string) ."\n";
+		my ($chr,$start,$end,$base) = split(':',$unique_key);
+		print COORD join("\t",$group_by_coord{$unique_key}{count},$chr,$start,$end,$base,$coord_string) ."\n";
 	}
 }
 close SINGLE;

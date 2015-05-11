@@ -29,7 +29,7 @@ pod2usage(1) if ($OPT{help} || !$OPT{read1_file} || !$OPT{read2_file} || !$OPT{u
 
 =head1 SYNOPSIS
 
-group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_this_adaptor_seq -no_uid no_uid_present_in_sequence 
+group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_these_adaptor_seqs(divided_by_comma) -no_uid no_uid_present_in_sequence 
 
 Required flags: -read1_file -read2_file
 
@@ -70,10 +70,10 @@ my $min_seqlen = defined $OPT{min_seqlen}?$OPT{min_seqlen}:0;
 
 #If there adaptor we need to filter out
 my $adaptor = 0;
-my $adaptor_seq;
+my @adaptors;
 if (defined $OPT{adaptor_seq}) {
 	$adaptor = 1;
-	$adaptor_seq = $OPT{adaptor_seq};
+	@adaptors = split(",",$OPT{adaptor_seq});
 }
 
 #Flag to tell whether we need 
@@ -123,34 +123,26 @@ while (!eof(READ1) && !eof(READ2)) {
 		#Get the revcom
 		my $revcom_line2 = revcom($line2);
 
-		#First remove adaptor if present
+		#First remove any adaptors if present
 		if ($adaptor) {
-			my $filtered_line1 = &remove_adaptor($line1,$adaptor_seq);
-			my $filtered_line2 = &remove_adaptor($revcom_line2,$adaptor_seq);
-			$line1 = $filtered_line1;
-			$revcom_line2 = $filtered_line2;
-			
-			if (length($line1) != length($revcom_line2)) {
-				#TODO: Correct to be the same length
-				modules::Exception->throw("ERROR: Filtering made read lengths different");
+			for my $adaptor_seq (@adaptors) {
+				if ($line1 =~ /^$adaptor_seq/) {
+					my $filtered_line1 = &remove_adaptor($line1,$adaptor_seq);
+					$line1 = $filtered_line1;
+				}
+
+				if ($revcom_line2 =~ /^$adaptor_seq/) {
+					my $filtered_line2 = &remove_adaptor($revcom_line2,$adaptor_seq);
+					$revcom_line2 = $filtered_line2;
+				}
 			}
 			
-		}
-
-	    # Start assuming that read sequences are from the same, comparable strand.  How does this happen?
 			
-	    #my ($bar1_part1, $seq1_remainder) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
-	    #my ($seq2_remainder, $bar2_part2) = $line2 =~ /(\S+)(\S{$uid_len1})$/;
-
-	    #my ($seq1) = $seq1_remainder =~ /(\S+)$bar2_part2/;
-	    #my ($seq2) = $seq2_remainder =~ /$bar1_part1(\S+)/;
-
-	    # If this didnt work, try the revcom of line2.  The read sequences are from opposite strands
-
-		#($seq2_remainder, $bar2_part2) = revcom($line2) =~ /(\S+)(\S{$uid_len1})$/;
-
-	    #($seq1) = $seq1_remainder =~ /(\S+)$bar2_part2/;
-	    #($seq2) = $seq2_remainder =~ /$bar1_part1(\S+)/;
+			#if (length($line1) != length($revcom_line2)) {
+				#modules::Exception->throw("ERROR: Filtering made read lengths different\n$line1\n$revcom_line2");
+			#}
+			
+		}
 
 		my $final_seq1 = my $final_seq2 = my $barcode1 = my $barcode2;
 		if ($split_barcode) {
@@ -228,7 +220,6 @@ while (!eof(READ1) && !eof(READ2)) {
 	
 	$count++;
 	if ($count%1000000 ==0) {
-		print "Count $count\n";
 		print "Match $match_count\n" unless $no_uid;
 		print "No match: $no_match\n\n" unless $no_uid;
 	}
