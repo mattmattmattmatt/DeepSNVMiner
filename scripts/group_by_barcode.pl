@@ -240,6 +240,10 @@ while (!eof(READ1) && !eof(READ2)) {
 print "Match $match_count\n";
 print "No match: $no_match\n";
 
+if ($match_count == 0) {
+	modules::Exception->throw("ERROR: No read pairs with matching UIDs were found; please make sure UIDs are defined properly");
+}
+
 
 
 ### Subroutines
