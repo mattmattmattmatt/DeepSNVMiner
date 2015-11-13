@@ -195,6 +195,8 @@ while (!eof(READ1) && !eof(READ2)) {
 				$match_count++;
 				$match_seq_length = length($final_seq1);
 				$any_good_data = 1;
+				$tag1 =~ s/\/[012]$//;
+				$tag2 =~ s/\/[012]$//;
 				print FILTERREAD1 "$tag1:UID=$barcode1\n$final_seq1\n";
 				print FILTERREAD2 "$tag2:UID=$barcode2\n$final_seq2\n";
 				
