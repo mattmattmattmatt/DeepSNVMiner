@@ -81,7 +81,7 @@ my %COMMANDS = (1 =>
 				  	 {
 				  	 	'block' => 'report',
 				  	 	'commands' => [
-				  	 					q(grep UID= FASTQFILE1.filter FASTQFILE2.filter | cut -d':' -f9 | sed -e 's/\/1//' -e 's/UID=//' | sort | uniq -c |  perl -ne 's/^\s+//; s/[\t\s]+/ /g; print $_ . "\n"' > FILENAMESTUB_R1.group_counts_final),# Generate stats - number of reads in groups
+				  	 					q(grep UID= FASTQFILE1.filter FASTQFILE2.filter | sed -e 's/.*UID=//' | sort | uniq -c |  perl -ne 's/^\s+//; s/[\t\s]+/ /g; print $_ . "\n"' > FILENAMESTUB_R1.group_counts_final),# Generate stats - number of reads in groups
 				  	 					q(VARSUMMARY -var_dir vars_FILENAMESTUB -group_file FILENAMESTUB_R1.group_counts_final),# Group by barcode for each coordinate
 										q(cut -d' ' -f1 FILENAMESTUB_R1.group_counts_final |sort | uniq -c | perl -e 'while(<>){chomp; /(\d+)\s+(\d+)/; $tally += $1;} print $tally . "\n";'),#Total reads in groups
 										q(grep -w ^1 FILENAMESTUB_R1.group_counts_final |wc -l),#Total reads in singleton groups
@@ -133,6 +133,7 @@ sub new {
 	   					-uid_len2,
 	   					-coord_bed,
 	   					-bwa,
+	   					-bwa_index,
 	   					-samtools,
 	   					-ref_fasta,
 	   					-base
@@ -164,15 +165,14 @@ sub new {
    	$mapping{BEDFILE} = $args{-coord_bed};
    	$mapping{SAMTOOLS}= $args{-samtools};
    	$mapping{GENOMEFASTA} = $args{-ref_fasta};
-	(my $bwa_index = $args{-ref_fasta}) =~ s/\.fa//;
-	$mapping{BINDEX} = $bwa_index;
+	$mapping{BINDEX} = $args{-bwa_index};
 	
 	
    	$mapping{R_DIR}  =  $r_dir;
    	$mapping{NUMTHREADS} = defined $args{-num_threads}?$args{-num_threads}:1;
-   	$mapping{SM_COUNT} = defined $args{-sm_count}?$args{-sm_count}:10;
-   	$mapping{SM_PORTION} = defined $args{-sm_portion}?$args{-sm_portion}:0.9;
-   	$mapping{MIN_GROUP} = defined $args{-min_group}?$args{-min_group}:2;
+   	$mapping{SM_COUNT} = defined $args{-sm_count}?$args{-sm_count}:5;
+   	$mapping{SM_PORTION} = defined $args{-sm_portion}?$args{-sm_portion}:0.4;
+   	$mapping{MIN_GROUP} = defined $args{-min_group}?$args{-min_group}:1;
    	$mapping{NO_UID} = defined $args{-no_uid}?'-no_uid':'';
    	$mapping{MIN_SEQLEN} = defined $args{-min_seqlen}?"-min_seqlen ".$args{-min_seqlen}:'';
    	$mapping{GROUPBYBARCODE} = "$scripts_dir/group_by_barcode.pl";

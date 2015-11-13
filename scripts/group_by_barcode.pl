@@ -173,7 +173,14 @@ while (!eof(READ1) && !eof(READ2)) {
 			} elsif ($barcode1 eq $barcode2) {
 				$final_seq1 = $seq1;
 				$final_seq2 = $seq2;
-			} 
+			} else {
+				#last try to salvage match, sometimes barcode isn't revcom for some reason
+				($barcode2) = $line2 =~ /^(\S{$uid_len1})/; 
+				if ($barcode1 eq $barcode2) {
+					$final_seq1 = $seq1;
+					$final_seq2 = $seq2;
+				}
+			}
 			
 		}
 
