@@ -57,10 +57,10 @@ Matthew Field
 =cut
 
 my (undef,$base) = fileparse(abs_path($0));
-my $conf_file = $base.'/deepseq.conf';
+my $conf_file = $base.'/deepseq_test.conf';
 
 if (!-e $conf_file) {
-	modules::Exception->throw("Please run configure_deepseq.pl first");
+	modules::Exception->throw("Please run 'configure_deepseq.pl -test' first");
 }
 
 open(CONF,"$conf_file") || modules::Exception->throw("Can't open file $conf_file\n");
