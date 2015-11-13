@@ -9,12 +9,12 @@ my %COMMANDS = (1 =>
 				  	 {
 				  	 	'block' => 'check_fastq',
 				  	 	'commands' => [
-				  	 					q(sed -n '2~4p' FASTQFILE1 |wc -l), # Total reads in FASTQ file 1
-				  	 					q(sed -n '2~4p' FASTQFILE2 |wc -l),	# Total reads in FASTQ file 2	
-				  	 					q(sed -n '2~4p' FASTQFILE1 | grep ^N.*N$ | wc -l),# Count all-N reads in FASTQ file 1
-				  	 					q(sed -n '2~4p' FASTQFILE2 | grep ^N.*N$ | wc -l),# Count all-N reads in FASTQ file 2
-				  	 					q(sed -n '2~4p' FASTQFILE1 | grep -v ^N.*N$ > FASTQFILE1.no_Ns_R1),# Produce FASTQ file with all-N reads removed (read 1)
-				  	 					q(sed -n '2~4p' FASTQFILE2 | grep -v ^N.*N$ > FASTQFILE2.no_Ns_R1),# Produce FASTQ file with all-N reads removed (read 2)
+				  	 					q(sed -n '1d;N;N;N;P;d' FASTQFILE1 |wc -l), # Total reads in FASTQ file 1
+				  	 					q(sed -n '1d;N;N;N;P;d' FASTQFILE2 |wc -l),	# Total reads in FASTQ file 2	
+				  	 					q(sed -n '1d;N;N;N;P;d' FASTQFILE1 | grep ^N.*N$ | wc -l),# Count all-N reads in FASTQ file 1
+				  	 					q(sed -n '1d;N;N;N;P;d' FASTQFILE2 | grep ^N.*N$ | wc -l),# Count all-N reads in FASTQ file 2
+				  	 					q(sed -n '1d;N;N;N;P;d' FASTQFILE1 | grep -v ^N.*N$ > FASTQFILE1.no_Ns_R1),# Produce FASTQ file with all-N reads removed (read 1)
+				  	 					q(sed -n '1d;N;N;N;P;d' FASTQFILE2 | grep -v ^N.*N$ > FASTQFILE2.no_Ns_R1),# Produce FASTQ file with all-N reads removed (read 2)
 				  	 					q(cat FASTQFILE1.no_Ns_R1 FASTQFILE2.no_Ns_R1 | awk '{ print length($0); }' > FILENAMESTUB.no_Ns_sizes),# Produce a file containing sizes of all non-N reads
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
