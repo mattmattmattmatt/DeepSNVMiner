@@ -17,7 +17,10 @@ use vars qw(%OPT);
 	   "uid_len2=i",
 	   "adaptor_seq=s",
 	   "min_seqlen=i",
-	   "no_uid"
+	   "no_uid",
+	   "no_pair_match",
+	   "cut_length=i",
+	   "no_revcom"
 	   );
 
 pod2usage(-verbose => 2) if $OPT{man};
@@ -29,7 +32,7 @@ pod2usage(1) if ($OPT{help} || !$OPT{read1_file} || !$OPT{read2_file} || !$OPT{u
 
 =head1 SYNOPSIS
 
-group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_these_adaptor_seqs(divided_by_comma) -no_uid no_uid_present_in_sequence 
+group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_these_adaptor_seqs(divided_by_comma) -no_uid no_uid_present_in_sequence -no_pair_match don't_require_read_pair_barcodes_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom don't_revcom_read2 
 
 Required flags: -read1_file -read2_file
 
@@ -79,6 +82,12 @@ if (defined $OPT{adaptor_seq}) {
 #Flag to tell whether we need 
 my $split_barcode = $uid_len2 > 0?1:0;
 
+my $cut_length = defined $OPT{cut_length}?$OPT{cut_length}:0;
+
+if ($OPT{cut_length} && $split_barcode) {
+	modules::Exception->throw("ERROR: Can't use split barcode and cut_length argument together");
+}
+
 open(READ1,"$read1") || die "Can't open file $read1\n";
 open(READ2,"$read2") || die "Can't open file $read2\n";
 
@@ -120,8 +129,14 @@ while (!eof(READ1) && !eof(READ2)) {
 			next;
 		}
 		
-		#Get the revcom
-		my $revcom_line2 = revcom($line2);
+		#Check whether revcom is required (default)
+		my $sequence_line2;
+		if ($OPT{no_revcom}) {
+			$sequence_line2 = $line2;
+		} else {
+			#Get the revcom
+			$sequence_line2 = revcom($line2);
+		}
 
 		#First remove any adaptors if present
 		if ($adaptor) {
@@ -131,9 +146,9 @@ while (!eof(READ1) && !eof(READ2)) {
 					$line1 = $filtered_line1;
 				}
 
-				if ($revcom_line2 =~ /^$adaptor_seq/) {
-					my $filtered_line2 = &remove_adaptor($revcom_line2,$adaptor_seq);
-					$revcom_line2 = $filtered_line2;
+				if ($sequence_line2 =~ /^$adaptor_seq/) {
+					my $filtered_line2 = &remove_adaptor($sequence_line2,$adaptor_seq);
+					$sequence_line2 = $filtered_line2;
 				}
 			}
 			
@@ -148,7 +163,7 @@ while (!eof(READ1) && !eof(READ2)) {
 		if ($split_barcode) {
 			#uid from both ends
 			my ($bar1_part1,$seq1,$bar1_part2) = $line1 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
-			my ($bar2_part1,$seq2,$bar2_part2) = $revcom_line2 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
+			my ($bar2_part1,$seq2,$bar2_part2) = $sequence_line2 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
 			$barcode1 = $bar1_part1.$bar1_part2;
 			$barcode2 = $bar2_part1.$bar2_part2;
 			
@@ -158,12 +173,24 @@ while (!eof(READ1) && !eof(READ2)) {
 			} elsif ($barcode1 eq $barcode2) { #With uids need to ensure barcodes match
 				$final_seq1 = $seq1;
 				$final_seq2 = $seq2;
+			} elsif ($OPT{no_pair_match}) {
+				$final_seq1 = $seq1;
+				$final_seq2 = $seq2;
 			}
 			
 		} else {
 			#uid from single end
-			my ($bar1,$seq1) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
-			my ($bar2,$seq2) = $revcom_line2 =~ /^(\S{$uid_len1})(\S+)/;
+			my $bar1 = my $bar2 = my $seq1 = my $seq2;
+			if ($cut_length) {
+				#Here we want to keep some the UID
+				($bar1) = $line1 =~ /^(\S{$uid_len1})/;
+				($bar2) = $sequence_line2 =~ /^(\S{$uid_len1})/;
+				(undef,$seq1) = $line1 =~ /^(\S{$cut_length})(\S+)/;
+				(undef,$seq2) = $sequence_line2 =~ /^(\S{$cut_length})(\S+)/;
+			} else {
+				($bar1,$seq1) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
+				($bar2,$seq2) = $sequence_line2 =~ /^(\S{$uid_len1})(\S+)/;
+			}
 			$barcode1 = $bar1;
 			$barcode2 = $bar2;
 			
@@ -173,15 +200,10 @@ while (!eof(READ1) && !eof(READ2)) {
 			} elsif ($barcode1 eq $barcode2) {
 				$final_seq1 = $seq1;
 				$final_seq2 = $seq2;
-			} else {
-				#last try to salvage match, sometimes barcode isn't revcom for some reason
-				($barcode2) = $line2 =~ /^(\S{$uid_len1})/; 
-				if ($barcode1 eq $barcode2) {
-					$final_seq1 = $seq1;
-					$final_seq2 = $seq2;
-				}
-			}
-			
+			} elsif ($OPT{no_pair_match}) {
+				$final_seq1 = $seq1;
+				$final_seq2 = $seq2;
+			} 
 		}
 
 		
@@ -214,16 +236,30 @@ while (!eof(READ1) && !eof(READ2)) {
 			print FILTERREAD1 "$line1\n";
 			print FILTERREAD2 "$line2\n";
 		} elsif ($count%4 == 3) {
+			my $error_line2;
+			if ($OPT{no_revcom}) {
+				$error_line2 = $line2;
+			} else {
+				#Get the reverse
+				$error_line2 = reverse($line2);
+			}
+			
+			my $readqual1 = my $readqual2;
 			#Quality string; we need to shorten this to match the sequence bases
 			if ($no_uid) {
-				print FILTERREAD1 "$line1\n";
-				print FILTERREAD2 "$line2\n";
+				$readqual1 = $line1;
+				$readqual2 = $line2;
+			} elsif ($cut_length) {
+				(undef,$readqual1) = $line1 =~ /^(\S{$cut_length})(\S+)/;
+				(undef,$readqual2) = $error_line2 =~ /^(\S{$cut_length})(\S+)/;
 			} else {
-				my ($readqual1) = $line1 =~ /^\S{$uid_len1}(\S{$match_seq_length})/;
-				my ($readqual2) = $line2 =~ /^\S{$uid_len2}(\S{$match_seq_length})/;
-				print FILTERREAD1 "$readqual1\n";
-				print FILTERREAD2 "$readqual2\n";
+				($readqual1) = $line1 =~ /^\S{$uid_len1}(\S{$match_seq_length})/;
+				($readqual2) = $error_line2 =~ /^\S{$uid_len2}(\S{$match_seq_length})/;
+				
 			}
+			print FILTERREAD1 "$readqual1\n";
+			print FILTERREAD2 "$readqual2\n";
+			
 		}
 	}
 	

@@ -34,7 +34,7 @@ my %COMMANDS = (1 =>
 					{
 				  	 	'block' => 'pool_reads',
 				  	 	'commands' => [
-										"GROUPBYBARCODE -read1_file FASTQFILE1 -read2_file FASTQFILE2 ADAPTOR NO_UID -uid_len1 UID_LEN1 -uid_len2 UID_LEN2 MIN_SEQLEN",# Filter the reads, remove the barcode sequence content and add barcodes to the tags
+										"GROUPBYBARCODE -read1_file FASTQFILE1 -read2_file FASTQFILE2 ADAPTOR NO_REVCOM NO_UID NO_PAIR_MATCH CUT_LENGTH -uid_len1 UID_LEN1 -uid_len2 UID_LEN2 MIN_SEQLEN",# Filter the reads, remove the barcode sequence content and add barcodes to the tags
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
 				  	 	'stdout' => [
@@ -174,6 +174,9 @@ sub new {
    	$mapping{SM_PORTION} = defined $args{-sm_portion}?$args{-sm_portion}:0.4;
    	$mapping{MIN_GROUP} = defined $args{-min_group}?$args{-min_group}:1;
    	$mapping{NO_UID} = defined $args{-no_uid}?'-no_uid':'';
+   	$mapping{NO_PAIR_MATCH} = defined $args{-no_pair_match}?'-no_pair_match':'';
+   	$mapping{CUT_LENGTH} = defined $args{-cut_length}?'-cut_length '.$args{-cut_length}:'';
+   	$mapping{NO_REVCOM} = defined $args{-no_revcom}?'-no_revcom':'';
    	$mapping{MIN_SEQLEN} = defined $args{-min_seqlen}?"-min_seqlen ".$args{-min_seqlen}:'';
    	$mapping{GROUPBYBARCODE} = "$scripts_dir/group_by_barcode.pl";
    	$mapping{VARBASES}  = "$scripts_dir/var_bases.pl";
