@@ -107,7 +107,7 @@ while (<BED>) {
 		next if /\t==+=\t/; #Skip perfect matches
 		
 		my @fields = split("\t");
-		next if $fields[5] =~ /[NSHP]/; #Only handle snvs, insertions, and deletions
+		next if $fields[5] =~ /[SHP]/; #Only handle snvs, insertions, and deletions
 		
 		my @cigar_lengths = $fields[5] =~ /\d+/g;
 		my @cigar_types = $fields[5] =~ /\D+/g;
@@ -129,14 +129,16 @@ while (<BED>) {
 		    } elsif ($cigar_types[$block] =~ /I/) {
 		    	my $inserted_bases;
 		    	my $insertion_length = $cigar_lengths[$block];
-		    	#Here we don't change the genomic coordinate only the base index counter
-		    	$base_index += $insertion_length;
+
 		    	
 		    	while ($insertion_length > 0) {
 		    		$inserted_bases .= $bases[$base_index];
 		    		$insertion_length--;
 		    	}
 		    	
+		    	#Here we don't change the genomic coordinate only the base index counter
+		    	$base_index += $insertion_length;
+
 				print VAR join("\t",$fields[2],$mutant_coord,$mutant_coord,$base_index+1,'+'.$inserted_bases,$fields[0],$fields[3],$fields[9],$fields[5])."\n";											    	
 		    	
 		    } elsif ($cigar_types[$block] =~ /M/) {
@@ -150,6 +152,9 @@ while (<BED>) {
 		    		$mutant_coord++;
 		    		$block_count--;
 		    	}
+		    } elsif ($cigar_types[$block] =~ /N/) {
+		    	#Here we don't change the base index counter only the genome coordinate
+		    	$mutant_coord += $cigar_lengths[$block];
 		    }
 		    
 		}		

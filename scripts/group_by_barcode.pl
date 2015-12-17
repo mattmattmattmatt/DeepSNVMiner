@@ -20,7 +20,8 @@ use vars qw(%OPT);
 	   "no_uid",
 	   "no_pair_match",
 	   "cut_length=i",
-	   "no_revcom"
+	   "no_revcom",
+	   "combine_reads"
 	   );
 
 pod2usage(-verbose => 2) if $OPT{man};
@@ -32,7 +33,7 @@ pod2usage(1) if ($OPT{help} || !$OPT{read1_file} || !$OPT{read2_file} || !$OPT{u
 
 =head1 SYNOPSIS
 
-group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_these_adaptor_seqs(divided_by_comma) -no_uid no_uid_present_in_sequence -no_pair_match don't_require_read_pair_barcodes_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom don't_revcom_read2 
+group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_these_adaptor_seqs(divided_by_comma) -no_uid no_uid_present_in_sequence -no_pair_match don't_require_read_pair_barcodes_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom don't_revcom_read2 -combine_reads combine_barcode_from_read_pair 
 
 Required flags: -read1_file -read2_file
 
@@ -164,8 +165,14 @@ while (!eof(READ1) && !eof(READ2)) {
 			#uid from both ends
 			my ($bar1_part1,$seq1,$bar1_part2) = $line1 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
 			my ($bar2_part1,$seq2,$bar2_part2) = $sequence_line2 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
-			$barcode1 = $bar1_part1.$bar1_part2;
-			$barcode2 = $bar2_part1.$bar2_part2;
+			
+			if ($OPT{combine_reads}) {
+				$barcode1 = $barcode2 = $bar1_part1.$bar1_part2.$bar2_part1.$bar2_part2;
+			} else {
+				$barcode1 = $bar1_part1.$bar1_part2;
+				$barcode2 = $bar2_part1.$bar2_part2;
+			}
+			
 			
 			if ($no_uid) { #Without uids just use the sequence
 				$final_seq1 = $line1;
@@ -191,8 +198,14 @@ while (!eof(READ1) && !eof(READ2)) {
 				($bar1,$seq1) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
 				($bar2,$seq2) = $sequence_line2 =~ /^(\S{$uid_len1})(\S+)/;
 			}
-			$barcode1 = $bar1;
-			$barcode2 = $bar2;
+			
+			if ($OPT{combine_reads}) {
+				$barcode1 = $barcode2 = $bar1.$bar2;
+			} else {
+				$barcode1 = $bar1;
+				$barcode2 = $bar2;
+			}
+			
 			
 			if ($no_uid) {
 				$final_seq1 = $line1;

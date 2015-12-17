@@ -90,12 +90,25 @@ for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coo
 	#my ($chr,$coord) = $file =~ /([0-9XYM]+):(\d+)/;
 	open(FILE,"$var_dir/$file") || modules::Exception->throw("Can't open file $var_dir/$file\n");
 	my %var_data = ();
+	
+	#Keep track of duplicate lines which sometimes appear with fillmd.....
+	my %lines = ();
+	
 	while (<FILE>) {
 		chomp;
+		next if exists $lines{$_};
+		$lines{$_}++;
 		my @fields = split("\t");
+
+		#Only report variants in the block
+		my ($file_start,$file_end) = $file =~ /_(\d+)_(\d+)/;
+		next unless $file_start < $fields[1] && $file_end > $fields[1];
+		
 		my @tag_fields = split(":",$fields[5]);
 		my $barcode = $tag_fields[-1];
 		$barcode =~ s/UID=//; 
+
+
 
 		next if $fields[3] eq ''; # added by DA - this field is frequently empty
 		
@@ -114,7 +127,9 @@ for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coo
 			next;
 		}
 		
+		
 		$var_data{$fields[0]}{$fields[1]}{$fields[2]}{$barcode}{$fields[4]}++;	
+		
 	}
 	
 	close FILE;
@@ -126,10 +141,15 @@ for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coo
 					for my $base (sort {$a cmp $b} keys %{$var_data{$chr}{$start}{$end}{$barcode}}) {
 						my $var_count = $var_data{$chr}{$start}{$end}{$barcode}{$base};
 						my $group_count = $group_counts{$barcode};
+						
+						#Secondary alignments sometimes get counted twice
+						$var_count = $group_count if $var_count > $group_count;
+						
 						if (!exists $group_counts{$barcode}) {
 							#modules::Exception->warning("ERROR: Problem with barcode $barcode, skipping");
 							next;
 						} 
+						
 						my $percent = sprintf("%.2f",($var_count / $group_count) * 100) if $group_count;
 						print SUMMARY "$chr $start $end $base $barcode $var_count $group_count $percent%\n";
 					}
@@ -143,7 +163,7 @@ for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coo
 }
 
 #These files are often large and not needed after this
-system("rm $var_dir/*fillmd");
+#system("rm $var_dir/*fillmd");
 
 close SUMMARY;
 
