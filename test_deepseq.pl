@@ -100,7 +100,7 @@ my $default_command = "./run_deepseq.pl -conf_file $test_conf -filename_stub tes
 my $sys_call = modules::SystemCall->new();
 
 print "Testing Deepseq default....\n";
-&test_deepseq($out,$default_command,467);
+&test_deepseq($out,$default_command,163);
 
 print "\nInstallation Success!\n";
 
