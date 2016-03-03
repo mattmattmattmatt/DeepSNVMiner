@@ -50,7 +50,7 @@ my %COMMANDS = (1 =>
 				  	 					q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE1.filter > FASTQFILE1.sai),# Align reads 1
 				  	 					q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE2.filter > FASTQFILE2.sai),# Align reads 2
 				  	 					q(BWA sampe BINDEX FASTQFILE1.sai FASTQFILE2.sai FASTQFILE1.filter FASTQFILE2.filter > FILENAMESTUB.sam),# Merge alignment ...
-				  	 					q(grep -v XT:A:R FILENAMESTUB.sam | SAMTOOLS view -S -b - | SAMTOOLS sort -m1800000000 - FILENAMESTUB),# Massage and sort alignment
+				  	 					q(grep -v XT:A:R FILENAMESTUB.sam | SAMTOOLS view -S -b - | SAMTOOLS sort -m1800000000 -o FILENAMESTUB.bam -),# Massage and sort alignment
 				  	 					q(SAMTOOLS index FILENAMESTUB.bam )# Generate alignment index *.bai file
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)

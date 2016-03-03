@@ -46,7 +46,7 @@ Required flags: -samtools -bam -ref_fasta -outdir -coord_bed
 
 =head1 NAME
 
-var_bases.pl -> Script to run samtools fillmd and parse results
+var_bases.pl -> Script to run samtools calmd and parse results
 
 =head1 DESCRIPTION
 
@@ -83,7 +83,7 @@ while (<BED>) {
 	
 	#my $awk_command = q('BEGIN {OFS = FS = "\t" } ; {n=split($10,a,"") ; if(a[(pos-$4)+1] != "=" ) print $3, pos,(pos-$4)+1, a[(pos-$4)+1], $1, $4, $10 }');
 	my $outfile = $output_dir. "/${chr}_${start_base}_${end_base}.fillmd";
-    my $command = "$samtools_bin view -b $bam_file $chr:$start_base\-$end_base \| $samtools_bin fillmd -e - $genome_fasta_file > $outfile";
+    my $command = "$samtools_bin view -b $bam_file $chr:$start_base\-$end_base \| $samtools_bin calmd -e - $genome_fasta_file > $outfile";
 	
 	print STDERR $command . "\n";
 	$sys_call->run($command);

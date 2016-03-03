@@ -120,7 +120,7 @@ if (-e $conf_file) {
 		} elsif (/bwa_index=(.+)$/) {
 			$bwa_index = $1;
 			if ( !-e $bwa_index ) {
-				if (!-e $bwa_index.'.fa') {
+				if (!-e $bwa_index.'.sa') {
 					modules::Exception->throw("BWA index file $bwa_index doesn't exist");	
 				}
 			}
