@@ -1,0 +1,7 @@
+args <- commandArgs(trailingOnly = TRUE)
+input <- paste(args[1],args[2],sep="/")
+data <-read.table(file=input)
+out <- paste(args[1],"group_sizes.graph.pdf",sep="/")
+postscript(file=out, width=8, height=8)
+hist(data$V1,xlab="Group size(# read pairs)",main="Number of Read Pairs for all Group",nclass=500)
+dev.off()
