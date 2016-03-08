@@ -74,7 +74,7 @@ if ( !-e $super_mutants ) {
 
 my $r_dir = $OPT{r_dir};
 if ( !-d $r_dir ) {
-	modules::Exception->throw("File $r_dir doesn't exist");	
+	mkdir($r_dir);
 }
 
 my (undef,$workdir) = fileparse($super_mutants);
@@ -111,6 +111,12 @@ for my $var_file (@variant_files) {
 
 
 my @r_commands = ();
+
+if ($coord_bed =~ /ref.bed/) {
+	$coord_bed =~ s/ref/ref_graph/;	
+}
+
+print "Open bed $coord_bed\n";
 
 open(BED,"$coord_bed") || modules::Exception->throw("Can't open file $coord_bed\n");
 while (<BED>) {

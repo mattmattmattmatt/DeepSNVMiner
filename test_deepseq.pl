@@ -14,6 +14,7 @@ use modules::Exception;
 GetOptions(\%OPT, 
 	   "help|h",
 	   "man|m",
+	   "graph"
 	   );
 
 pod2usage(-verbose => 2) if $OPT{man};
@@ -25,7 +26,7 @@ pod2usage(1) if ($OPT{help});
 
 =head1 SYNOPSIS
 
-test_deepseq.pl [options]
+test_deepseq.pl -graph generate_graphs (requires R) [options]
 
 Required flags: NONE
 
@@ -98,6 +99,10 @@ my $out = $workdir.'/test.pass_group_supermutants.tsv';
 
 my $default_command = "./run_deepseq.pl -conf_file $test_conf -filename_stub test -working_dir $workdir -read1_fastq $base/sample/read1.fq -read2_fastq $base/sample/read2.fq -coord_bed $base/sample/ref.bed";
 my $sys_call = modules::SystemCall->new();
+
+if ($OPT{graph}) {
+	$default_command .= " -graph";
+}
 
 print "Testing Deepseq default....\n";
 &test_deepseq($out,$default_command,163);

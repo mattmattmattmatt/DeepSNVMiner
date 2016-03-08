@@ -105,7 +105,7 @@ my %COMMANDS = (1 =>
 				  	 {
 				  	 	'block' => 'graph',
 				  	 	'commands' => [
-										q(cut -d' ' -f1 FILENAMESTUB_R1.group_counts_final | grep -v -w ^1 > no_Ns_group_sizes;  Rscript R_DIR/group_size.R WORKING_DIR FILENAMESTUB_R1.group_counts_final; ls group_sizes.graph.pdf),#Graph of group sizes
+										q(cut -d' ' -f1 FILENAMESTUB_R1.group_counts_final | grep -v -w ^1 > no_Ns_group_sizes;  Rscript R_DIR/group_size.R WORKING_DIR FILENAMESTUB_R1.group_counts_final),#Graph of group sizes
 										q(GRAPH -var_dir vars_FILENAMESTUB -r_dir R_DIR -coord_bed BEDFILE -super_mutants WORKING_DIR/FILENAMESTUB.pass_single_supermutants.tsv) 
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
