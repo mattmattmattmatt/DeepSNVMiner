@@ -108,8 +108,6 @@ for my $var_file (@variant_files) {
 	close FILE;
 }
 
-
-
 my @r_commands = ();
 
 if ($coord_bed =~ /ref.bed/) {
@@ -122,6 +120,10 @@ open(BED,"$coord_bed") || modules::Exception->throw("Can't open file $coord_bed\
 while (<BED>) {
 	my ($chr,$start,$end) = split;	
 	next unless $chr =~ /^chr/ || $chr =~ /^[0-9XYM]/; #skip headers
+	if ($end - $start > 1000) {
+		#Skip graphs larger than 1000bp
+		print "Skip graph $chr:$start-$end; too large a genomic region\n";
+	}
 	#Generate the R commands for each block
 	my $sm_out = "$chr:$start"."_supermutant_coords.txt";
 	my $var_out = "$chr:$start"."_variants_coords.txt";
@@ -143,15 +145,15 @@ while (<BED>) {
 	close SMOUT;
 	close VAROUT;
 	#Rscript R_DIR/group_size.R WORKING_DIR WORKING_DIR/FILENAMESTUB_R1.group_counts_final
-	my $sm_pdf = "$chr:$start"."_supermutant.pdf";
-	my $var_pdf = "$chr:$start"."_allvariants.pdf";
+	my $sm_jpeg = "$chr:$start"."_supermutant.jpeg";
+	my $var_jpeg = "$chr:$start"."_allvariants.jpeg";
 	#Now create the R commands
 	if ($sm_flag) {
-		my $r_super = join(" ", 'Rscript', $r_dir .'/supermut_coord.R',$workdir,$sm_out,$sm_pdf); #don't bother with empty files
+		my $r_super = join(" ", 'Rscript', $r_dir .'/supermut_coord.R',$workdir,$sm_out,$sm_jpeg); #don't bother with empty files
 		push @r_commands, $r_super;	
 	}
 	if ($var_flag) {
-		my $r_variants = join(" ", 'Rscript', $r_dir .'/mut_coord.R',$workdir,$var_out,$var_pdf);
+		my $r_variants = join(" ", 'Rscript', $r_dir .'/mut_coord.R',$workdir,$var_out,$var_jpeg);
 		push @r_commands, $r_variants;
 	}
 	
@@ -162,5 +164,5 @@ my $sys_call = modules::SystemCall->new();
 for my $command ( @r_commands ) {
 	$sys_call->run($command);
 }
-$sys_call->run("rm *_coords.txt");
-$sys_call->run("mv *pdf graphs");
+#$sys_call->run("rm *_coords.txt");
+$sys_call->run("mv *jpeg graphs");

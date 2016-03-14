@@ -64,35 +64,9 @@ if (!-e $conf_file) {
 	modules::Exception->throw("Please run 'configure_deepseq.pl -test' first");
 }
 
-open(CONF,"$conf_file") || modules::Exception->throw("Can't open file $conf_file\n");
-
-my $bwa = my $samtools;
-	
-while (<CONF>) {
-	chomp;
-	if (/samtools=(.+)$/) {
-		$samtools = $1;
-		if ( !-e $samtools ) {
-			modules::Exception->throw("Samtools $samtools doesn't exist");	
-		}
-	} elsif (/bwa=(.+)$/) {
-		$bwa = $1;
-		if ( !-e $bwa ) {
-			modules::Exception->throw("BWA $bwa doesn't exist");	
-		}
-	} 
-}
 
 my $test_conf = $base.'/deepseq_test.conf';
-my $ref_fasta_abs = $base.'/sample/ref.fa';
-my $bwa_index_file = $ref_fasta_abs;
 
-open(NEWCONF,">$test_conf") || modules::Exception->throw("Can't open file to write $test_conf\n");
-print NEWCONF "bwa=$bwa\n";
-print NEWCONF "samtools=$samtools\n";
-print NEWCONF "ref_fasta=$ref_fasta_abs\n";
-print NEWCONF "bwa_index=$bwa_index_file\n";
-close NEWCONF;
 
 my $workdir = "$base/sample/results";
 my $out = $workdir.'/test.pass_group_supermutants.tsv';

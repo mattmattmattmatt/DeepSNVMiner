@@ -95,6 +95,9 @@ my $PRINT_TO_STDOUT = 1;
 my (undef,$base) = fileparse(abs_path($0));
 my $conf_file = defined $OPT{conf_file}?$OPT{conf_file}:$base.'/deepseq.conf';
 
+my $sys_call = modules::SystemCall->new();
+
+
 #Set the variables either using a conf file or parse them from the command line
 if (-e $conf_file) {
  	#Read the config file to get paths needed
@@ -172,7 +175,6 @@ if (!-e $ref_fasta) {
 	modules::Exception->throw("ERROR: Problem with $ref_fasta");
 }
 
-my $sys_call = modules::SystemCall->new();
 
 my $ref_fasta_abs = abs_path($ref_fasta);
 

@@ -17,7 +17,8 @@ GetOptions(\%OPT,
 				"help|h",
 	   			"man|m",
 				"conf_file=s",
-				"test"
+				"test",
+				"force"
 			);
 pod2usage(-verbose => 2) if $OPT{man};
 pod2usage(1) if ($OPT{help});
@@ -27,7 +28,7 @@ pod2usage(1) if ($OPT{help});
 
 =head1 SYNOPSIS
 
-configure_deepseq.pl -test generate_test_conf -conf_file generate_specific conf_file
+configure_deepseq.pl -test generate_test_conf -conf_file generate_specific conf_file -force force_overwrite_conf
 
 Required flags: NONE
 
@@ -67,8 +68,8 @@ if ($OPT{test}) {
 	$conf_file = defined $OPT{conf_file}?$OPT{conf_file}:$base.'/deepseq.conf';
 }
 
-if (-e $conf_file) {
-	modules::Exception->throw("Conf file $conf_file already exists, please remove this file before running this script");
+if (-e $conf_file && !$OPT{force}) {
+	modules::Exception->throw("Conf file $conf_file already exists, please remove this file or run with the flag '-force'");
 }
 
 #Set the path variable and generate a conf file 
@@ -76,6 +77,7 @@ print "What is the path to samtools [default=/usr/bin/samtools]?";
 my $samtools = <STDIN>;
 chomp $samtools;
 if ( !-e $samtools && -e '/usr/bin/samtools' ) {
+	print "Using system samtools: /usr/bin/samtools\n";
 	$samtools =  '/usr/bin/samtools';
 } elsif (!-e $samtools) {
 	modules::Exception->throw("Samtools $samtools doesn't exist");	
@@ -85,6 +87,7 @@ print "What is the path to bwa [default=/usr/bin/bwa]?";
 my $bwa = <STDIN>;
 chomp $bwa;
 if ( !-e $bwa && -e '/usr/bin/bwa' ) {
+	print "Using system bwa: /usr/bin/bwa\n";
 	$bwa =  '/usr/bin/bwa';
 } elsif (!-e $bwa) {
 	modules::Exception->throw("Bwa $bwa doesn't exist");	
@@ -129,10 +132,14 @@ if (!-e $bwa_index_file) {
 #bwa only requires the file prefix name
 $bwa_index_file =~ s/\.sa$//;
 
+
 open(CONF,">$conf_file") || modules::Exception->throw("Can't open xml file $conf_file for writing\n");
 print CONF "bwa=$bwa\n";
 print CONF "samtools=$samtools\n";
 print CONF "ref_fasta=$ref_fasta_abs\n";
 print CONF "bwa_index=$bwa_index_file\n";
 close CONF;
+
+
+
 

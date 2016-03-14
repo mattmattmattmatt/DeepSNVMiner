@@ -1,6 +1,7 @@
 package modules::Deepseq;
 use File::Basename;
 use Data::Dumper;
+use modules::SystemCall;
 use strict;
 
 
@@ -50,7 +51,7 @@ my %COMMANDS = (1 =>
 				  	 					q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE1.filter > FASTQFILE1.sai),# Align reads 1
 				  	 					q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE2.filter > FASTQFILE2.sai),# Align reads 2
 				  	 					q(BWA sampe BINDEX FASTQFILE1.sai FASTQFILE2.sai FASTQFILE1.filter FASTQFILE2.filter > FILENAMESTUB.sam),# Merge alignment ...
-				  	 					q(grep -v XT:A:R FILENAMESTUB.sam | SAMTOOLS view -S -b - | SAMTOOLS sort -m1800000000 -o FILENAMESTUB.bam -),# Massage and sort alignment
+				  	 					q(grep -v XT:A:R FILENAMESTUB.sam | SAMTOOLS view -S -b - | SAMTOOLS sort -m1800000000 VERSION),# Massage and sort alignment
 				  	 					q(SAMTOOLS index FILENAMESTUB.bam )# Generate alignment index *.bai file
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
@@ -185,6 +186,18 @@ sub new {
    	$mapping{FINALSUMMARY} = "$scripts_dir/final_summary.pl";
    	$mapping{GRAPH} = "$scripts_dir/graph.pl";
    	$mapping{ADAPTOR} = ''; #Gets reset later if we find adaptor sequence
+   	
+   	#Special handling for samtools v1.3
+   	my $samtools_version = &Get_Binary_Version($args{-samtools});
+   
+   	print "Check version $samtools_version\n";
+   
+   	#Different options to samtools sort as of v1.3
+   	if ($samtools_version >= 1.3) {
+   		$mapping{VERSION} = '-o '.$args{-filename_stub}.'.bam -';
+   	} else {
+   		$mapping{VERSION} = '- '.$args{-filename_stub};
+   	}
    
    	$self->{mapping} = \%mapping;
    	
@@ -327,6 +340,23 @@ sub get_commands {
 	} 
 
 	return \%local_commands;
+}
+
+#Sub routine that tries to extract the binary given the executable
+sub Get_Binary_Version {
+        my ($full_bin_path) = @_;
+        my @lines = split("\n", `$full_bin_path 2>&1`);
+        my ($out) = grep {/version/i} @lines;
+        my $version;
+        #This regex happens to match all out binaries
+        if (defined $out && $out =~ /Version:\s+([0-9\.]+)/) {
+        	$version = $1;
+        } elsif (defined $out && $out =~ /^version\s+([0-9\.]+)/) {
+    		$version = $1;
+        } else {
+	    	modules::Exception->throw("ERROR: Cannot get version for binary $full_bin_path")
+        }
+        return $version;
 }
 
 
