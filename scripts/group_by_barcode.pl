@@ -268,8 +268,13 @@ while (!eof(READ1) && !eof(READ2)) {
 				$readqual1 = $line1;
 				$readqual2 = $line2;
 			} elsif ($cut_length) {
-				(undef,$readqual1) = $line1 =~ /^(\S{$cut_length})(\S+)/;
-				(undef,$readqual2) = $error_line2 =~ /^(\S{$cut_length})(\S+)/;
+				if ($split_barcode) {
+					($readqual1) = $line1 =~ /^\S{$cut_length}(\S+)\S{$cut_length}/;
+					($readqual2) = $error_line2 =~ /^\S{$cut_length}(\S+)\S{$cut_length}/;
+				} else {
+					($readqual1) = $line1 =~ /^\S{$cut_length}(\S+)/;
+					($readqual2) = $error_line2 =~ /^\S{$cut_length}(\S+)/;
+				}
 			} else {
 				($readqual1) = $line1 =~ /^\S{$uid_len1}(\S{$match_seq_length})/;
 				($readqual2) = $error_line2 =~ /^\S{$uid_len2}(\S{$match_seq_length})/;
