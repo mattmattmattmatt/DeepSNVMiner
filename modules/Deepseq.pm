@@ -48,16 +48,15 @@ my %COMMANDS = (1 =>
 				  	 {
 				  	 	'block' => 'bwa',
 				  	 	'commands' => [
-				  	 					q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE1.filter > FASTQFILE1.sai),# Align reads 1
-				  	 					q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE2.filter > FASTQFILE2.sai),# Align reads 2
-				  	 					q(BWA sampe BINDEX FASTQFILE1.sai FASTQFILE2.sai FASTQFILE1.filter FASTQFILE2.filter > FILENAMESTUB.sam),# Merge alignment ...
-				  	 					q(grep -v XT:A:R FILENAMESTUB.sam | SAMTOOLS view -S -b - | SAMTOOLS sort -m1800000000 VERSION),# Massage and sort alignment
+				  	 					#q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE1.filter > FASTQFILE1.sai),# Align reads 1
+				  	 					#q(BWA aln -t NUMTHREADS -O 5 -M 10 -i 0 BINDEX FASTQFILE2.filter > FASTQFILE2.sai),# Align reads 2
+				  	 					#q(BWA sampe BINDEX FASTQFILE1.sai FASTQFILE2.sai FASTQFILE1.filter FASTQFILE2.filter > FILENAMESTUB.sam),# Merge alignment ...
+				  	 					q(BWA mem -M -t NUMTHREADS BINDEX FASTQFILE1.filter FASTQFILE2.filter > FILENAMESTUB.sam),
+				  	 					q(SAMTOOLS view -S -b FILENAMESTUB.sam | SAMTOOLS sort -m1800000000 VERSION),# Massage and sort alignment
 				  	 					q(SAMTOOLS index FILENAMESTUB.bam )# Generate alignment index *.bai file
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
 				  	 	'stdout' => [
-				  	 				0,
-				  	 				0,
 				  	 				0,
 				  	 				0,
 				  	 				0
@@ -172,8 +171,8 @@ sub new {
    	$mapping{R_DIR}  =  $r_dir;
    	$mapping{NUMTHREADS} = defined $args{-num_threads}?$args{-num_threads}:1;
    	$mapping{SM_COUNT} = defined $args{-sm_count}?$args{-sm_count}:5;
-   	$mapping{SM_PORTION} = defined $args{-sm_portion}?$args{-sm_portion}:0.4;
-   	$mapping{MIN_GROUP} = defined $args{-min_group}?$args{-min_group}:1;
+   	$mapping{SM_PORTION} = defined $args{-sm_portion}?$args{-sm_portion}:0.8;
+   	$mapping{MIN_GROUP} = defined $args{-min_group}?$args{-min_group}:2;
    	$mapping{NO_UID} = defined $args{-no_uid}?'-no_uid':'';
    	$mapping{NO_PAIR_MATCH} = defined $args{-no_pair_match}?'-no_pair_match':'';
    	$mapping{CUT_LENGTH} = defined $args{-cut_length}?'-cut_length '.$args{-cut_length}:'';
