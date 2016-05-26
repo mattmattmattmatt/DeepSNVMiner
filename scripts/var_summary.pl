@@ -88,16 +88,17 @@ open(SUMMARY,">variant_summary.txt") || modules::Exception->throw("ERROR: Can't 
 
 for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coord) = $b =~ /(\S+)_(\d+)/; $a_chr cmp $b_chr || $a_coord <=> $b_coord } @files) {
 	#my ($chr,$coord) = $file =~ /([0-9XYM]+):(\d+)/;
+	next if $file =~ /fillmd/;
 	open(FILE,"$var_dir/$file") || modules::Exception->throw("Can't open file $var_dir/$file\n");
 	my %var_data = ();
 	
-	#Keep track of duplicate lines which sometimes appear with fillmd.....
-	my %lines = ();
+	#Keep track of duplicate lines which sometimes appear with fillmd..... -> couldn't duplicate problem and breaks handling of read pairs containing same variant
+	#my %lines = (); 
 	
 	while (<FILE>) {
 		chomp;
-		next if exists $lines{$_};
-		$lines{$_}++;
+		#next if exists $lines{$_};
+		#$lines{$_}++;
 		my @fields = split("\t");
 
 		#Only report variants in the block
