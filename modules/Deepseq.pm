@@ -171,8 +171,8 @@ sub new {
    	$mapping{R_DIR}  =  $r_dir;
    	$mapping{NUMTHREADS} = defined $args{-num_threads}?$args{-num_threads}:1;
    	$mapping{SM_COUNT} = defined $args{-sm_count}?$args{-sm_count}:5;
-   	$mapping{SM_PORTION} = defined $args{-sm_portion}?$args{-sm_portion}:0.8;
-   	$mapping{MIN_GROUP} = defined $args{-min_group}?$args{-min_group}:2;
+   	$mapping{SM_PORTION} = defined $args{-sm_portion}?$args{-sm_portion}:0.5;
+   	$mapping{MIN_GROUP} = defined $args{-min_group}?$args{-min_group}:1;
    	$mapping{NO_UID} = defined $args{-no_uid}?'-no_uid':'';
    	$mapping{NO_PAIR_MATCH} = defined $args{-no_pair_match}?'-no_pair_match':'';
    	$mapping{CUT_LENGTH} = defined $args{-cut_length}?'-cut_length '.$args{-cut_length}:'';
