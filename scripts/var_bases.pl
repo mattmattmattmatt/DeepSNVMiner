@@ -136,10 +136,11 @@ while (<BED>) {
 		    		$insertion_length--;
 		    	}
 		    	
-		    	#Here we don't change the genomic coordinate only the base index counter
-		    	$base_index += $insertion_length;
-
 				print VAR join("\t",$fields[2],$mutant_coord,$mutant_coord,$base_index+1,'+'.$inserted_bases,$fields[0],$fields[3],$fields[9],$fields[5])."\n";											    	
+
+		    	#Here we don't change the genomic coordinate only the base index counter
+		    	$base_index += $cigar_lengths[$block];
+
 		    	
 		    } elsif ($cigar_types[$block] =~ /M/) {
 		    	while ($block_count > 0) {

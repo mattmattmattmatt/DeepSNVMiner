@@ -79,7 +79,7 @@ if ($OPT{graph}) {
 }
 
 print "Testing Deepseq default....\n";
-&test_deepseq($out,$default_command,163);
+&test_deepseq($out,$default_command,170);
 
 print "\nInstallation Success!\n";
 

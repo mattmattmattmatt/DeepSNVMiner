@@ -24,6 +24,7 @@ GetOptions(
 	   		"read1_fastq=s",
 	   		"read2_fastq=s",
 	   		"start_command=s",
+	   		"end_command=s",
 	   		"working_dir=s",
 	   		"no_adaptor",
 	   		"no_uid",
@@ -55,7 +56,7 @@ pod2usage(1) if ($OPT{help} || !$OPT{filename_stub} || !$OPT{read1_fastq} || !$O
 
 =head1 SYNOPSIS
 
-run_deepseq.pl -filename_stub unique_samplename -read1_fastq fastq1 -read2_fastq fastq2 -start_command command_to_start_from(default=first_command) -working_dir working_dir(default=pwd/filename_stub_RAND) -no_adaptor no_adaptor_sequence(default=present) -uid_len1 length_of_5prime_uid_length(default=10) -uid_len2 length_of_3prime_uid_length(default=0) -bwa full_bwa_path(default=/usr/bin/bwa) -samtools full_samtools_path(default=/usr/bin/samtools) -ref_fasta full_path_to_reference_fasta(must contain bwa index files as well) -coord_bed bed_file_containing_target_coordinates -sm_count min_number_of_reads_for_supermutant(default=10) -sm_portion min_fraction_of_variant_bases_within_UID_reads(default=0.90) -threads num_threads_for_bwa(default=1) -config create_config_file -graph generate_variant_graphs_for_each_genomic_region(requires R) -min_seqlen minimum_sequence_length_to_keep_seq(default=0) -min_group min_num_of_passing_groups_to_qualify_for_supermutant(default=2) -conf_file deepseq_conf_fiel(default=deepseq.conf) -no_pair_match don't_require_barcodes_in_read_pairs_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom no_revcom_for_read2 -combine_reads combine_barcodes_from_R1_and_R2  
+run_deepseq.pl -filename_stub unique_samplename -read1_fastq fastq1 -read2_fastq fastq2 -start_command command_to_start_from(default=first_command) -end_command last_command_to_run(default=last_command) -working_dir working_dir(default=pwd/filename_stub_RAND) -no_adaptor no_adaptor_sequence(default=present) -uid_len1 length_of_5prime_uid_length(default=10) -uid_len2 length_of_3prime_uid_length(default=0) -bwa full_bwa_path(default=/usr/bin/bwa) -samtools full_samtools_path(default=/usr/bin/samtools) -ref_fasta full_path_to_reference_fasta(must contain bwa index files as well) -coord_bed bed_file_containing_target_coordinates -sm_count min_number_of_reads_for_supermutant(default=10) -sm_portion min_fraction_of_variant_bases_within_UID_reads(default=0.90) -threads num_threads_for_bwa(default=1) -config create_config_file -graph generate_variant_graphs_for_each_genomic_region(requires R) -min_seqlen minimum_sequence_length_to_keep_seq(default=0) -min_group min_num_of_passing_groups_to_qualify_for_supermutant(default=2) -conf_file deepseq_conf_fiel(default=deepseq.conf) -no_pair_match don't_require_barcodes_in_read_pairs_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom no_revcom_for_read2 -combine_reads combine_barcodes_from_R1_and_R2  
 
 Required flags: -filename_stub -read1_fastq -read2_fastq -coord_bed
 
@@ -326,6 +327,8 @@ if (defined $OPT{min_group}) {
 my $start_command = defined $OPT{'start_command'}?$OPT{start_command}:'check_fastq';
 my $start_number = 1;
 
+my $end_command = defined $OPT{'end_command'}?$OPT{end_command}:'graph';
+
 
 # Start a log/results file 
 
@@ -358,6 +361,12 @@ if ($start_command ne 'check_fastq') {
 		modules::Exception->throw("ERROR: Can't start at step $start_command; options are check_fastq,pool_reads,bwa,call_variants,report,or graph");
 	} 
 	$start_number = $deepseq->get_step_number($start_command);
+}
+
+if ($end_command ne 'graph') {
+	if (!$deepseq->check_step($end_command)) {
+		modules::Exception->throw("ERROR: Can't end at step $end_command; options are check_fastq,pool_reads,bwa,call_variants,report,or graph");
+	} 
 }
 
 
@@ -403,6 +412,9 @@ for my $command_count (sort keys %{$commands}) {
 		}
 	}
 	
+	if ($end_command eq $block) {
+		exit;
+	}
 }
 
 

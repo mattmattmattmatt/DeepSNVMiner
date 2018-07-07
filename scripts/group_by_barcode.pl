@@ -85,10 +85,6 @@ my $split_barcode = $uid_len2 > 0?1:0;
 
 my $cut_length = defined $OPT{cut_length}?$OPT{cut_length}:0;
 
-if ($OPT{cut_length} && $split_barcode) {
-	modules::Exception->throw("ERROR: Can't use split barcode and cut_length argument together");
-}
-
 open(READ1,"$read1") || die "Can't open file $read1\n";
 open(READ2,"$read2") || die "Can't open file $read2\n";
 
@@ -163,11 +159,20 @@ while (!eof(READ1) && !eof(READ2)) {
 		my $final_seq1 = my $final_seq2 = my $barcode1 = my $barcode2;
 		if ($split_barcode) {
 			#uid from both ends
-			my ($bar1_part1,$seq1,$bar1_part2) = $line1 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
-			my ($bar2_part1,$seq2,$bar2_part2) = $sequence_line2 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
+			my $bar1_part1 = my $seq1 = my $bar1_part2 = my $bar2_part1 = my $seq2 = my $bar2_part2;
+			if ($cut_length) {
+				#Here we remove extra seuqence from each end of the split barcode
+				($bar1_part1,$bar1_part2) = $line1 =~ /^(\S{$uid_len1})\S+(\S{$uid_len2})/;
+				($bar2_part1,$bar2_part2) = $sequence_line2 =~ /^(\S{$uid_len1})\S+(\S{$uid_len2})/;
+				($seq1) = $line1 =~ /^\S{$cut_length}(\S+)\S{$cut_length}/;
+				($seq2) = $sequence_line2 =~ /^\S{$cut_length}(\S+)\S{$cut_length}/;
+			} else {
+				($bar1_part1,$seq1,$bar1_part2) = $line1 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
+				($bar2_part1,$seq2,$bar2_part2) = $sequence_line2 =~ /^(\S{$uid_len1})(\S+)(\S{$uid_len2})/;
+			}
 			
 			if ($OPT{combine_reads}) {
-				$barcode1 = $barcode2 = $bar1_part1.$bar1_part2.$bar2_part1.$bar2_part2;
+					$barcode1 = $barcode2 = $bar1_part1.$bar1_part2.$bar2_part1.$bar2_part2;
 			} else {
 				$barcode1 = $bar1_part1.$bar1_part2;
 				$barcode2 = $bar2_part1.$bar2_part2;
@@ -196,8 +201,8 @@ while (!eof(READ1) && !eof(READ2)) {
 				#Here we want to keep some the UID
 				($bar1) = $line1 =~ /^(\S{$uid_len1})/;
 				($bar2) = $sequence_line2 =~ /^(\S{$uid_len1})/;
-				(undef,$seq1) = $line1 =~ /^(\S{$cut_length})(\S+)/;
-				(undef,$seq2) = $sequence_line2 =~ /^(\S{$cut_length})(\S+)/;
+				($seq1) = $line1 =~ /^\S{$cut_length}(\S+)/;
+				($seq2) = $sequence_line2 =~ /^\S{$cut_length}(\S+)/;
 			} else {
 				($bar1,$seq1) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
 				($bar2,$seq2) = $sequence_line2 =~ /^(\S{$uid_len1})(\S+)/;
@@ -267,8 +272,13 @@ while (!eof(READ1) && !eof(READ2)) {
 				$readqual1 = $line1;
 				$readqual2 = $line2;
 			} elsif ($cut_length) {
-				(undef,$readqual1) = $line1 =~ /^(\S{$cut_length})(\S+)/;
-				(undef,$readqual2) = $error_line2 =~ /^(\S{$cut_length})(\S+)/;
+				if ($split_barcode) {
+					($readqual1) = $line1 =~ /^\S{$cut_length}(\S+)\S{$cut_length}/;
+					($readqual2) = $error_line2 =~ /^\S{$cut_length}(\S+)\S{$cut_length}/;
+				} else {
+					($readqual1) = $line1 =~ /^\S{$cut_length}(\S+)/;
+					($readqual2) = $error_line2 =~ /^\S{$cut_length}(\S+)/;
+				}
 			} else {
 				($readqual1) = $line1 =~ /^\S{$uid_len1}(\S{$match_seq_length})/;
 				($readqual2) = $error_line2 =~ /^\S{$uid_len2}(\S{$match_seq_length})/;
