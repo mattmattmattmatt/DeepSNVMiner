@@ -188,7 +188,11 @@ while (!eof(READ1) && !eof(READ2)) {
 		} else {
 			#uid from single end
 			my $bar1 = my $bar2 = my $seq1 = my $seq2;
-			if ($cut_length) {
+			if ($uid_len2 == 0) { 
+                        	($bar1,$seq1) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
+                                ($seq2) = $sequence_line2 =~ /^(\S+)/;
+				$bar2 = $bar1;		
+                        } elsif ($cut_length) {
 				#Here we want to keep some the UID
 				($bar1) = $line1 =~ /^(\S{$uid_len1})/;
 				($bar2) = $sequence_line2 =~ /^(\S{$uid_len1})/;
