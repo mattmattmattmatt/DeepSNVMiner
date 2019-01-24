@@ -35,7 +35,7 @@ my %COMMANDS = (1 =>
 					{
 				  	 	'block' => 'pool_reads',
 				  	 	'commands' => [
-										"GROUPBYBARCODE -read1_file FASTQFILE1 -read2_file FASTQFILE2 ADAPTOR COMBINE_READS NO_REVCOM NO_UID NO_PAIR_MATCH CUT_LENGTH -uid_len1 UID_LEN1 -uid_len2 UID_LEN2 MIN_SEQLEN",# Filter the reads, remove the barcode sequence content and add barcodes to the tags
+										"GROUPBYBARCODE -read1_file FASTQFILE1 -read2_file FASTQFILE2 ADAPTOR COMBINE_READS NO_REVCOM NO_UID NO_PAIR_MATCH CUT_LENGTH -uid_len1 UID_LEN1 -uid_len2 UID_LEN2 MIN_SEQLEN UID_DONE",# Filter the reads, remove the barcode sequence content and add barcodes to the tags
 				  	 					],
 				  	 	#Reports to stdouts (1 = STDOUT; 0 = STDERR)
 				  	 	'stdout' => [
@@ -185,6 +185,7 @@ sub new {
    	$mapping{FINALSUMMARY} = "$scripts_dir/final_summary.pl";
    	$mapping{GRAPH} = "$scripts_dir/graph.pl";
    	$mapping{ADAPTOR} = ''; #Gets reset later if we find adaptor sequence
+   	$mapping{UID_DONE} = defined $args{-uid_done}?'-uid_done':'';
    	
    	#Special handling for samtools v1.3
    	my $samtools_version = &Get_Binary_Version($args{-samtools});

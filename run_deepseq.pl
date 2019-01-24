@@ -44,7 +44,8 @@ GetOptions(
 	   		"no_pair_match",
 	   		"cut_length=i",
 	   		"no_revcom",
-	   		"combine_reads"
+	   		"combine_reads",
+	   		"uid_done"
 	   		) || modules::Exception->throw("ERROR: Problem with command line arguments");;
 
 pod2usage(-verbose => 2) if $OPT{man};
@@ -56,7 +57,7 @@ pod2usage(1) if ($OPT{help} || !$OPT{filename_stub} || !$OPT{read1_fastq} || !$O
 
 =head1 SYNOPSIS
 
-run_deepseq.pl -filename_stub unique_samplename -read1_fastq fastq1 -read2_fastq fastq2 -start_command command_to_start_from(default=first_command) -end_command last_command_to_run(default=last_command) -working_dir working_dir(default=pwd/filename_stub_RAND) -no_adaptor no_adaptor_sequence(default=present) -uid_len1 length_of_5prime_uid_length(default=10) -uid_len2 length_of_3prime_uid_length(default=0) -bwa full_bwa_path(default=/usr/bin/bwa) -samtools full_samtools_path(default=/usr/bin/samtools) -ref_fasta full_path_to_reference_fasta(must contain bwa index files as well) -coord_bed bed_file_containing_target_coordinates -sm_count min_number_of_reads_for_supermutant(default=10) -sm_portion min_fraction_of_variant_bases_within_UID_reads(default=0.90) -threads num_threads_for_bwa(default=1) -config create_config_file -graph generate_variant_graphs_for_each_genomic_region(requires R) -min_seqlen minimum_sequence_length_to_keep_seq(default=0) -min_group min_num_of_passing_groups_to_qualify_for_supermutant(default=2) -conf_file deepseq_conf_fiel(default=deepseq.conf) -no_pair_match don't_require_barcodes_in_read_pairs_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom no_revcom_for_read2 -combine_reads combine_barcodes_from_R1_and_R2  
+run_deepseq.pl -filename_stub unique_samplename -read1_fastq fastq1 -read2_fastq fastq2 -start_command command_to_start_from(default=first_command) -end_command last_command_to_run(default=last_command) -working_dir working_dir(default=pwd/filename_stub_RAND) -no_adaptor no_adaptor_sequence(default=present) -uid_len1 length_of_5prime_uid_length(default=10) -uid_len2 length_of_3prime_uid_length(default=0) -bwa full_bwa_path(default=/usr/bin/bwa) -samtools full_samtools_path(default=/usr/bin/samtools) -ref_fasta full_path_to_reference_fasta(must contain bwa index files as well) -coord_bed bed_file_containing_target_coordinates -sm_count min_number_of_reads_for_supermutant(default=10) -sm_portion min_fraction_of_variant_bases_within_UID_reads(default=0.90) -threads num_threads_for_bwa(default=1) -config create_config_file -graph generate_variant_graphs_for_each_genomic_region(requires R) -min_seqlen minimum_sequence_length_to_keep_seq(default=0) -min_group min_num_of_passing_groups_to_qualify_for_supermutant(default=2) -conf_file deepseq_conf_fiel(default=deepseq.conf) -no_pair_match don't_require_barcodes_in_read_pairs_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom no_revcom_for_read2 -combine_reads combine_barcodes_from_R1_and_R2 -uid_done uid_already_in_fastq(format_is_">read1:UID=SEQ")  
 
 Required flags: -filename_stub -read1_fastq -read2_fastq -coord_bed
 
@@ -322,6 +323,10 @@ if (defined $OPT{min_seqlen}) {
 
 if (defined $OPT{min_group}) {
 	$args{-min_group} = $OPT{min_group};
+}
+
+if (defined $OPT{uid_done}) {
+	$args{-uid_done} = 1;
 }
 
 my $start_command = defined $OPT{'start_command'}?$OPT{start_command}:'check_fastq';

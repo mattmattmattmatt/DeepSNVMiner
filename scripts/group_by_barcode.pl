@@ -21,7 +21,8 @@ use vars qw(%OPT);
 	   "no_pair_match",
 	   "cut_length=i",
 	   "no_revcom",
-	   "combine_reads"
+	   "combine_reads",
+	   "uid_done"
 	   );
 
 pod2usage(-verbose => 2) if $OPT{man};
@@ -33,7 +34,7 @@ pod2usage(1) if ($OPT{help} || !$OPT{read1_file} || !$OPT{read2_file} || !$OPT{u
 
 =head1 SYNOPSIS
 
-group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_these_adaptor_seqs(divided_by_comma) -no_uid no_uid_present_in_sequence -no_pair_match don't_require_read_pair_barcodes_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom don't_revcom_read2 -combine_reads combine_barcode_from_read_pair 
+group_by_barcode.pl -read1_file read1_file -read2_file read2_file -uid_len1 uid_length_from_5`_end -uid_len2 uid_length_from_3`_end -adaptor filter_out_these_adaptor_seqs(divided_by_comma) -no_uid no_uid_present_in_sequence -no_pair_match don't_require_read_pair_barcodes_to_match -cut_length remove_this_many_bases(default=uid1+uid2) -no_revcom don't_revcom_read2 -combine_reads combine_barcode_from_read_pair -uid_done fastq_file_contains_UID(format_is_">read1:UID=SEQ") 
 
 Required flags: -read1_file -read2_file
 
@@ -85,6 +86,8 @@ my $split_barcode = $uid_len2 > 0?1:0;
 
 my $cut_length = defined $OPT{cut_length}?$OPT{cut_length}:0;
 
+my $uid_done = defined $OPT{uid_done}?1:0;
+
 open(READ1,"$read1") || die "Can't open file $read1\n";
 open(READ2,"$read2") || die "Can't open file $read2\n";
 
@@ -98,6 +101,17 @@ my $match_count = 0;
 my $no_match = 0;
 
 my %barcode_count = ();
+
+#Here we don't need to add UID's as they are already added (format ">read1:UID=SEQ")
+if ($uid_done) {
+	my $regex = `grep :UID=[AGTC] $read1`;
+	if ($regex !~ /\S/) {
+		modules::Exception->throw("ERROR: UID must match syntax '>read1:UID=SEQ'");
+	}
+	system("cp $read1 $read1.filter");
+	system("cp $read2 $read2.filter");
+	exit;
+}
 
 open(FILTERREAD1,">$read1.filter") || die "Can't open $read1.filter";
 open(FILTERREAD2,">$read2.filter") || die "Can't open $read2.filter";
@@ -172,7 +186,7 @@ while (!eof(READ1) && !eof(READ2)) {
 			}
 			
 			if ($OPT{combine_reads}) {
-					$barcode1 = $barcode2 = $bar1_part1.$bar1_part2.$bar2_part1.$bar2_part2;
+				$barcode1 = $barcode2 = $bar1_part1.$bar1_part2.$bar2_part1.$bar2_part2;
 			} else {
 				$barcode1 = $bar1_part1.$bar1_part2;
 				$barcode2 = $bar2_part1.$bar2_part2;
@@ -194,10 +208,11 @@ while (!eof(READ1) && !eof(READ2)) {
 			#uid from single end
 			my $bar1 = my $bar2 = my $seq1 = my $seq2;
 			if ($uid_len2 == 0) { 
-                        	($bar1,$seq1) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
-                                ($seq2) = $sequence_line2 =~ /^(\S+)/;
-				$bar2 = $bar1;		
-                        } elsif ($cut_length) {
+            	($bar1,$seq1) = $line1 =~ /^(\S{$uid_len1})(\S+)/;
+                #($seq2) = $sequence_line2 =~ /^(\S+)/;
+				#$bar2 = $bar1;
+				($bar2,$seq2) = $line1 =~ /^(\S{$uid_len1})(\S+)/;		
+         	} elsif ($cut_length) {
 				#Here we want to keep some the UID
 				($bar1) = $line1 =~ /^(\S{$uid_len1})/;
 				($bar2) = $sequence_line2 =~ /^(\S{$uid_len1})/;
