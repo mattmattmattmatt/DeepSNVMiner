@@ -80,8 +80,10 @@ open(BED,"$bed_file") || modules::Exception->throw("Can't open file $bed_file\n"
 #Generate a full pileup file as well
 my $pileup_file = $output_dir. "/pileup_file";
 my $mpileup_snv_command = "$samtools_bin mpileup -A -E -f $genome_fasta_file -l $bed_file $bam_file  > $pileup_file";
-open(PILEUP,"$pileup_file") || modules::Exception->throw("Can't open pileup file $pileup_file");
+print STDERR $mpileup_snv_command . "\n";
+$sys_call->run($mpileup_snv_command);
 
+open(PILEUP,"$pileup_file") || modules::Exception->throw("Can't open pileup file $pileup_file");
 open(ALLVARS,">all_UID_frequencies.txt") || modules::Exception->throw("ERROR: Can't open variant_summary file");
 
 
@@ -97,12 +99,10 @@ while (<PILEUP>) {
 						) ."\n";
 }
 close PILEUP;
+close ALLVARS;
 
 
 
-
-print STDERR $mpileup_snv_command . "\n";
-$sys_call->run($mpileup_snv_command);
 
 while (<BED>) {
 	my ($chr,$start_base,$end_base) = split();
