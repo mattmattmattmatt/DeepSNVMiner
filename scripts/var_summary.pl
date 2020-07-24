@@ -84,7 +84,7 @@ opendir (DIR,$var_dir) || modules::Exception->throw("ERROR: Can't open directory
 my @files = grep {/\d+/} readdir DIR;
 closedir DIR;
 
-open(SUMMARY,">variant_summary.txt") || modules::Exception->throw("ERROR: Can't open variant_summary file");
+open(SUMMARY,">variant_summary.tmp") || modules::Exception->throw("ERROR: Can't open variant_summary file");
 
 for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coord) = $b =~ /(\S+)_(\d+)/; $a_chr cmp $b_chr || $a_coord <=> $b_coord } @files) {
 	#my ($chr,$coord) = $file =~ /([0-9XYM]+):(\d+)/;
@@ -167,6 +167,10 @@ for my $file (sort {my ($a_chr,$a_coord) = $a =~ /(\S+)_(\d+)/;my ($b_chr,$b_coo
 #system("rm $var_dir/*fillmd");
 
 close SUMMARY;
+#Remove dups that may appear in overlapping genomic regions
+`cat variant_summary.tmp | sort | uniq >  variant_summary.txt`;
+
+
 
 
 
